@@ -176,18 +176,18 @@
   </div>
 
   <div class="lock-grid" id="lock-grid">
-    <button class="lock-btn" data-key="1">1</button>
-    <button class="lock-btn" data-key="2">2<span class="sub">ABC</span></button>
-    <button class="lock-btn" data-key="3">3<span class="sub">DEF</span></button>
-    <button class="lock-btn" data-key="4">4<span class="sub">GHI</span></button>
-    <button class="lock-btn" data-key="5">5<span class="sub">JKL</span></button>
-    <button class="lock-btn" data-key="6">6<span class="sub">MNO</span></button>
-    <button class="lock-btn" data-key="7">7<span class="sub">PQRS</span></button>
-    <button class="lock-btn" data-key="8">8<span class="sub">TUV</span></button>
-    <button class="lock-btn" data-key="9">9<span class="sub">WXYZ</span></button>
+    <button class="lock-btn" onclick="lockKey('1')">1</button>
+    <button class="lock-btn" onclick="lockKey('2')">2<span class="sub">ABC</span></button>
+    <button class="lock-btn" onclick="lockKey('3')">3<span class="sub">DEF</span></button>
+    <button class="lock-btn" onclick="lockKey('4')">4<span class="sub">GHI</span></button>
+    <button class="lock-btn" onclick="lockKey('5')">5<span class="sub">JKL</span></button>
+    <button class="lock-btn" onclick="lockKey('6')">6<span class="sub">MNO</span></button>
+    <button class="lock-btn" onclick="lockKey('7')">7<span class="sub">PQRS</span></button>
+    <button class="lock-btn" onclick="lockKey('8')">8<span class="sub">TUV</span></button>
+    <button class="lock-btn" onclick="lockKey('9')">9<span class="sub">WXYZ</span></button>
     <div></div>
-    <button class="lock-btn" data-key="0">0</button>
-    <button class="lock-btn del" data-key="del">&#x232B;</button>
+    <button class="lock-btn" onclick="lockKey('0')">0</button>
+    <button class="lock-btn del" onclick="lockDel()">&#x232B;</button>
   </div>
 </div>
 
@@ -462,29 +462,45 @@ function buildVBox(id,who,emoji,label,color,bg,avBg){
   var saved=safeStorage.getItem('note-'+id+'-'+who)||'';
   var bars='';
   for(var x=0;x<16;x++) bars+='<div class="wbar" style="background:'+color+'"></div>';
-  return '<div class="voice-box" id="vb-'+id+'-'+who+'" style="background:'+bg+';border-color:'+color+'28">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+  var ta=document.createElement('textarea');
+  ta.id='vnote-'+id+'-'+who;
+  ta.placeholder='Add a note...';
+  ta.style.cssText='width:100%;background:rgba(255,255,255,0.8);border:1.5px solid '+color+'44;border-radius:12px;padding:10px 12px;font-size:13px;font-family:DM Sans,sans-serif;color:#4A1530;resize:vertical;min-height:60px;outline:none;box-sizing:border-box;margin-top:4px';
+  ta.value=saved;
+  var wrapper=document.createElement('div');
+  wrapper.className='voice-box';
+  wrapper.id='vb-'+id+'-'+who;
+  wrapper.style.cssText='background:'+bg+';border-color:'+color+'28;border-radius:16px;padding:13px 15px;margin-bottom:10px;border:1.5px solid';
+  wrapper.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
     +'<div style="display:flex;align-items:center;gap:9px">'
     +'<div style="width:38px;height:38px;border-radius:50%;background:'+avBg+';display:flex;align-items:center;justify-content:center;font-size:19px">'+emoji+'</div>'
     +'<div><div style="font-weight:700;font-size:14px;color:#4A1530">'+esc(label)+'</div>'
     +'<div class="vb-status" id="vs-'+id+'-'+who+'" style="font-size:11px;color:#C48FAA">No recording</div></div></div>'
-    +'<div class="vb-ctrl" id="vc-'+id+'-'+who+'">'
-    +'<button class="vbbtn" style="background:'+color+'" onclick="startVoice(''+id+'',''+who+'',''+color+'')">🎙 Record</button>'
-    +'</div></div>'
+    +'<div class="vb-ctrl" id="vc-'+id+'-'+who+'"></div></div>'
     +'<div id="vw-'+id+'-'+who+'" style="display:none;gap:3px;margin-bottom:10px;align-items:flex-end;height:26px">'+bars+'</div>'
     +'<div id="vp-'+id+'-'+who+'" style="display:none;margin-bottom:10px;height:4px;background:rgba(0,0,0,.1);border-radius:3px;overflow:hidden">'
-    +'<div id="vpf-'+id+'-'+who+'" style="height:100%;border-radius:3px;transition:width .15s;width:0%;background:'+color+'"></div></div>'
-    +'<textarea id="vnote-'+id+'-'+who+'"'
-    +' placeholder="Add a note for '+esc(label)+'..."'
-    +' style="width:100%;background:rgba(255,255,255,0.8);border:1.5px solid '+color+'44;'
-    +'border-radius:12px;padding:10px 12px;font-size:13px;font-family:DM Sans,sans-serif;'
-    +'color:#4A1530;resize:vertical;min-height:60px;outline:none;box-sizing:border-box;margin-top:4px"'
-    +' oninput="saveNote(''+id+'',''+who+'',this.value)">'+esc(saved)+'</textarea>'
-    +'</div>';
+    +'<div id="vpf-'+id+'-'+who+'" style="height:100%;border-radius:3px;transition:width .15s;width:0%;background:'+color+'"></div></div>';
+  wrapper.appendChild(ta);
+  var tmp=document.createElement('div');
+  tmp.appendChild(wrapper);
+  return tmp.innerHTML;
+}
+function setCtrlBtn(ct,color,label,fn){
+  var btn=document.createElement('button');
+  btn.className='vbbtn';
+  btn.style.background=color;
+  btn.textContent=label;
+  btn.onclick=fn;
+  ct.innerHTML='';
+  ct.appendChild(btn);
+  return btn;
 }
 function initVoice(tid,who){
+  var color=who==='me'?'#E91E8C':'#F06292';
+  var ct=document.getElementById('vc-'+tid+'-'+who);
+  if(ct) setCtrlBtn(ct,color,'🎙 Record',function(){startVoice(tid,who,color);});
   var data=loadAudio(tid+'-'+who);
-  if(data){var au=new Audio(data);audioEl[tid+'-'+who]=au;wireAudio(tid,who,au);setVPhase(tid,who,'ready',who==='me'?'#E91E8C':'#F06292');}
+  if(data){var au=new Audio(data);audioEl[tid+'-'+who]=au;wireAudio(tid,who,au);setVPhase(tid,who,'ready',color);}
 }
 function saveNote(tid,who,val){ safeStorage.setItem('note-'+tid+'-'+who,val); }
 function wireAudio(tid,who,au){
@@ -495,20 +511,41 @@ function setVPhase(tid,who,phase,color){
   var st=document.getElementById('vs-'+tid+'-'+who),ct=document.getElementById('vc-'+tid+'-'+who);
   var wv=document.getElementById('vw-'+tid+'-'+who),pr=document.getElementById('vp-'+tid+'-'+who);
   if(!st)return;
+  ct.innerHTML='';
   if(phase==='idle'){
     st.textContent='No recording';
-    ct.innerHTML='<button class="vbbtn" style="background:'+color+'" onclick="startVoice(''+tid+'',''+who+'',''+color+'')">🎙 Record</button>';
+    setCtrlBtn(ct,color,'🎙 Record',function(){startVoice(tid,who,color);});
     if(wv)wv.style.display='none';if(pr)pr.style.display='none';
   } else if(phase==='recording'){
     st.textContent='Recording...';
-    ct.innerHTML='<span style="font-family:monospace;font-size:13px;font-weight:700;color:#EF4444" id="vt-'+tid+'-'+who+'">● 00:00</span>'
-      +'<button class="vbbtn" style="background:#EF4444;margin-left:6px" onclick="stopVoice(''+tid+'',''+who+'')">■ Stop</button>';
+    var timer=document.createElement('span');
+    timer.id='vt-'+tid+'-'+who;
+    timer.style.cssText='font-family:monospace;font-size:13px;font-weight:700;color:#EF4444';
+    timer.textContent='● 00:00';
+    ct.appendChild(timer);
+    var stop=document.createElement('button');
+    stop.className='vbbtn';stop.style.background='#EF4444';stop.style.marginLeft='6px';
+    stop.textContent='■ Stop';
+    stop.onclick=function(){stopVoice(tid,who);};
+    ct.appendChild(stop);
     if(wv)wv.style.display='flex';if(pr)pr.style.display='none';
   } else if(phase==='ready'){
     st.textContent='Saved ✓';
-    ct.innerHTML='<button class="vbbtn" style="background:'+color+'" id="vpb-'+tid+'-'+who+'" onclick="toggleVoice(''+tid+'',''+who+'',''+color+'')">▶ Play</button>'
-      +'<button style="border-radius:20px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;border:1.5px solid '+color+'55;color:'+color+';margin-left:5px;font-family:DM Sans,sans-serif" onclick="startVoice(''+tid+'',''+who+'',''+color+'')">↺ Redo</button>'
-      +'<button style="background:transparent;border:1.5px solid #DDD;color:#BBB;border-radius:20px;padding:6px 9px;font-size:11px;cursor:pointer;margin-left:5px" onclick="deleteVoice(''+tid+'',''+who+'',''+color+'')">✕</button>';
+    var play=document.createElement('button');
+    play.id='vpb-'+tid+'-'+who;play.className='vbbtn';play.style.background=color;
+    play.textContent='▶ Play';
+    play.onclick=function(){toggleVoice(tid,who,color);};
+    ct.appendChild(play);
+    var redo=document.createElement('button');
+    redo.style.cssText='border-radius:20px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;border:1.5px solid '+color+'55;color:'+color+';margin-left:5px;font-family:DM Sans,sans-serif';
+    redo.textContent='↺ Redo';
+    redo.onclick=function(){startVoice(tid,who,color);};
+    ct.appendChild(redo);
+    var del=document.createElement('button');
+    del.style.cssText='background:transparent;border:1.5px solid #DDD;color:#BBB;border-radius:20px;padding:6px 9px;font-size:11px;cursor:pointer;margin-left:5px';
+    del.textContent='✕';
+    del.onclick=function(){deleteVoice(tid,who,color);};
+    ct.appendChild(del);
     if(wv)wv.style.display='none';if(pr)pr.style.display='block';
   }
 }
@@ -675,12 +712,6 @@ function updateDots(){
     if(i<lockEntry.length){d.classList.add('filled');}else{d.classList.remove('filled');}
   }
 }
-document.addEventListener('click',function(e){
-  var btn=e.target.closest?e.target.closest('[data-key]'):null;
-  if(!btn)return;
-  var k=btn.getAttribute('data-key');
-  if(k==='del'){lockDel();}else{lockKey(k);}
-});
 document.addEventListener('keydown',function(e){
   var ls=document.getElementById('lock-screen');
   if(ls&&ls.style.display==='none')return;
