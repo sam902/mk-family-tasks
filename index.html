@@ -71,9 +71,9 @@
   .btn-danger:hover{background:#FFF1F2}
   .btn-notif{width:100%;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:15px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(233,30,140,.25);transition:transform .15s;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px}
   .btn-notif:active{transform:scale(.98)}
-  .det-info{background:#fff;border:1.5px solid var(--border);border-radius:15px;padding:13px 15px;font-size:14px;color:var(--sub);line-height:1.7;margin-bottom:20px}
+  .det-info{background:#fff;border:1.5px solid var(--border);border-radius:15px;padding:13px 15px;font-size:15px;color:#3D0A22;font-weight:500;line-height:1.7;margin-bottom:20px}
   .det-date{font-size:14px;color:#3D0A22;font-weight:600;margin-top:3px}
-  .sec-title{font-size:13px;font-weight:700;color:var(--navy);letter-spacing:.3px;margin-bottom:11px}
+  .sec-title{font-size:14px;font-weight:700;color:#3D0A22;letter-spacing:.3px;margin-bottom:11px}
   .sec-wrap{margin-bottom:22px}
   .prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
   .prog-val{font-family:'Cormorant Garant',serif;font-size:22px;font-weight:800}
@@ -158,7 +158,7 @@
 
   /* History */
   .hist-wrap{margin-bottom:22px}
-  .hist-title{font-size:13px;font-weight:700;color:#6D1B4A;letter-spacing:.3px;margin-bottom:12px}
+  .hist-title{font-size:14px;font-weight:700;color:#3D0A22;letter-spacing:.3px;margin-bottom:12px}
   .hist-empty{font-size:12px;color:#C48FAA;text-align:center;padding:16px 0;font-style:italic}
   .hist-item{background:#fff;border:1.5px solid #F8D7E3;border-radius:14px;padding:12px 14px;margin-bottom:8px}
   .hist-who{display:flex;align-items:center;gap:7px;margin-bottom:6px}
@@ -174,13 +174,13 @@
   .hist-type-voice{background:#F3E5F5;color:#6A1B9A;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:auto}
   .hist-audio-wrap{margin-top:8px;display:flex;align-items:center;gap:8px;background:#F8F0FF;border-radius:10px;padding:8px 12px}
   .hist-audio-play{background:#7B1FA2;color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer}
-  .hist-audio-dur{font-size:11px;color:#9C4DCC;font-weight:600}
+  .hist-audio-dur{font-size:13px;color:#6A1B9A;font-weight:700}
   /* Star badge */
   .card-star{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#FF6B6B,#FFE66D);color:#7B3F00;border-radius:20px;padding:3px 9px;font-size:11px;font-weight:800;animation:starPulse 2s ease-in-out infinite}
   @keyframes starPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
   /* Chat post */
   .chat-post-wrap{background:#fff;border:1.5px solid #F8D7E3;border-radius:16px;padding:14px 15px;margin-bottom:16px}
-  .chat-post-title{font-size:13px;font-weight:700;color:#6D1B4A;margin-bottom:10px}
+  .chat-post-title{font-size:14px;font-weight:700;color:#3D0A22;margin-bottom:10px}
   .chat-post-ta{width:100%;background:#FFF0F5;border:1.5px solid #F8D7E3;border-radius:12px;padding:10px 12px;font-size:15px;font-family:'DM Sans',sans-serif;color:#3D0A22;resize:vertical;min-height:60px;outline:none;box-sizing:border-box;margin-bottom:10px}
   .chat-post-ta:focus{border-color:#E91E8C;box-shadow:0 0 0 3px rgba(233,30,140,.08)}
   .chat-post-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -228,6 +228,10 @@
   .pb-thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
   .pb-thumb-del{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .pb-note{width:100%;background:rgba(255,255,255,.8);border:1.5px solid;border-radius:10px;padding:8px 11px;font-size:15px;font-family:'DM Sans',sans-serif;color:#3D0A22;resize:vertical;min-height:44px;outline:none;box-sizing:border-box}
+
+  .person-box.active-user{box-shadow:0 0 0 2.5px #E91E8C, 0 4px 16px rgba(233,30,140,.2)}
+  .person-box.active-wife{box-shadow:0 0 0 2.5px #F06292, 0 4px 16px rgba(240,98,146,.2)}
+  .active-badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#E91E8C,#F472B6);color:#fff;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:6px}
 </style>
 </head>
 <body>
@@ -393,7 +397,19 @@ function aestTime(){
 }
 function getLastSeen(tid){return parseInt(safeStorage.getItem('seen-'+tid)||'0',10);}
 function setLastSeen(tid){safeStorage.setItem('seen-'+tid,String(loadHist(tid).length));}
-function getUnseenCount(tid){return Math.max(0,loadHist(tid).length-getLastSeen(tid));}
+function getUnseenCount(tid){
+  if(!activeUser) return Math.max(0,loadHist(tid).length-getLastSeen(tid));
+  var h=loadHist(tid);
+  var fromOther=h.filter(function(e){return e.by!==activeUser;});
+  var seen=getLastSeen(tid+'-'+activeUser);
+  return Math.max(0,fromOther.length-seen);
+}
+function setLastSeenForUser(tid){
+  if(!activeUser){setLastSeen(tid);return;}
+  var h=loadHist(tid);
+  var fromOther=h.filter(function(e){return e.by!==activeUser;});
+  safeStorage.setItem('seen-'+tid+'-'+activeUser,String(fromOther.length));
+}
 
 var tasks=loadTasks();
 var recState={}, audioEl={}, _voiceLogPending={};
@@ -423,7 +439,8 @@ function saveSettings(){
 
 function renderList(){
   var list=document.getElementById('list'), empty=document.getElementById('empty');
-  document.getElementById('header-sub').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' \u00b7 '+tasks.length+' task'+(tasks.length!==1?'s':'');
+  var _s2=loadSettings(),_who_label=activeUser==='me'?(_s2.myName||'Pandit Ji'):activeUser==='wife'?(_s2.wifeName||'Darling Ji'):'';
+  document.getElementById('header-sub').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' · '+tasks.length+' task'+(tasks.length!==1?'s':'')+(_who_label?' · '+_who_label:'');
   var ow=document.getElementById('overall-wrap');
   if(tasks.length>0){
     ow.style.display='block';
@@ -482,7 +499,7 @@ function submitAdd(){
   saveTasks(tasks); closeOverlay('add-ov'); renderList();
 }
 
-function openDetail(id){var task=tasks.find(function(t){return t.id===id;});if(!task)return;buildDetail(id);openOverlay('det-ov');setLastSeen(id);setTimeout(renderList,400);}
+function openDetail(id){var task=tasks.find(function(t){return t.id===id;});if(!task)return;buildDetail(id);openOverlay('det-ov');setLastSeenForUser(id);setTimeout(renderList,400);}
 
 function buildDetail(id){
   var task=tasks.find(function(t){return t.id===id;}); if(!task)return;
@@ -511,10 +528,11 @@ function buildDetail(id){
     var s2=loadSettings(), ML2=s2.myName||'Pandit Ji', WL2=s2.wifeName||'Darling Ji';
     var sec=document.getElementById('pb-sec-'+id);
     if(sec){
-      sec.appendChild(buildPersonBox(id,'me','🧑',ML2,'#E91E8C','rgba(233,30,140,.06)','rgba(233,30,140,.16)'));
-      sec.appendChild(buildPersonBox(id,'wife','👩',WL2,'#F06292','rgba(240,98,146,.06)','rgba(240,98,146,.16)'));
+      if(!activeUser||activeUser==='me') sec.appendChild(buildPersonBox(id,'me','🧑',ML2,'#E91E8C','rgba(233,30,140,.06)','rgba(233,30,140,.16)'));
+            if(!activeUser||activeUser==='wife') sec.appendChild(buildPersonBox(id,'wife','👩',WL2,'#F06292','rgba(240,98,146,.06)','rgba(240,98,146,.16)'));
     }
-    initVoice(id,'me'); initVoice(id,'wife');
+    if(!activeUser||activeUser==='me') initVoice(id,'me');
+    if(!activeUser||activeUser==='wife') initVoice(id,'wife');
     buildHistSection(id); buildChatPost(id);
   },50);
 }
@@ -555,7 +573,7 @@ function buildVBox(id,who,emoji,label,color,bg,avBg){
   var ta=document.createElement('textarea');
   ta.id='vnote-'+id+'-'+who;
   ta.placeholder='Add a note...';
-  ta.style.cssText='width:100%;background:rgba(255,255,255,0.8);border:1.5px solid '+color+'44;border-radius:10px;padding:8px 11px;font-size:13px;font-family:DM Sans,sans-serif;color:#4A1530;resize:vertical;min-height:44px;outline:none;box-sizing:border-box;margin-top:6px;display:'+(hasAudio?'none':'block');
+  ta.style.cssText='width:100%;background:rgba(255,255,255,0.8);border:1.5px solid '+color+'44;border-radius:10px;padding:8px 11px;font-size:15px;font-family:DM Sans,sans-serif;color:#3D0A22;resize:vertical;min-height:44px;outline:none;box-sizing:border-box;margin-top:6px;display:'+(hasAudio?'none':'block');
   ta.value=saved;
   ta.oninput=function(){saveNote(id,who,this.value);};
   var wrapper=document.createElement('div');
@@ -565,8 +583,8 @@ function buildVBox(id,who,emoji,label,color,bg,avBg){
   wrapper.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between">'
     +'<div style="display:flex;align-items:center;gap:8px">'
     +'<div style="width:32px;height:32px;border-radius:50%;background:'+avBg+';display:flex;align-items:center;justify-content:center;font-size:16px">'+emoji+'</div>'
-    +'<div><div style="font-weight:700;font-size:13px;color:#4A1530">'+esc(label)+'</div>'
-    +'<div class="vb-status" id="vs-'+id+'-'+who+'" style="font-size:10px;color:#C48FAA">No recording</div></div></div>'
+    +'<div><div style="font-weight:700;font-size:16px;color:#3D0A22">'+esc(label)+'</div>'
+    +'<div class="vb-status" id="vs-'+id+'-'+who+'" style="font-size:13px;color:#6D1B4A;font-weight:600">No recording</div></div></div>'
     +'<div class="vb-ctrl" id="vc-'+id+'-'+who+'"></div></div>'
     +'<div id="vw-'+id+'-'+who+'" style="display:none;gap:3px;margin-top:6px;align-items:flex-end;height:20px">'+bars+'</div>'
     +'<div id="vp-'+id+'-'+who+'" style="display:none;margin-top:6px;height:3px;background:rgba(0,0,0,.1);border-radius:3px;overflow:hidden">'
@@ -601,7 +619,7 @@ function setVPhase(tid,who,phase,color){
     ct.innerHTML=''; ct.style.display='flex';
     var rbtn2=document.getElementById('vrecbtn-'+tid+'-'+who);if(rbtn2)rbtn2.style.display='none';
     var timer=document.createElement('span');timer.id='vt-'+tid+'-'+who;
-    timer.style.cssText='font-family:monospace;font-size:13px;font-weight:700;color:#EF4444';
+    timer.style.cssText='font-family:monospace;font-size:14px;font-weight:700;color:#EF4444';
     timer.textContent='● 00:00';ct.appendChild(timer);
     var stop=document.createElement('button');stop.className='vbbtn';stop.style.background='#EF4444';stop.style.marginLeft='6px';
     stop.textContent='■ Stop';stop.onclick=function(){stopVoice(tid,who);};ct.appendChild(stop);
@@ -612,7 +630,7 @@ function setVPhase(tid,who,phase,color){
     var rbtn3=document.getElementById('vrecbtn-'+tid+'-'+who);if(rbtn3)rbtn3.style.display='none';
     var play=document.createElement('button');play.id='vpb-'+tid+'-'+who;play.className='vbbtn';play.style.background=color;
     play.textContent='▶ Play';play.onclick=function(){toggleVoice(tid,who,color);};ct.appendChild(play);
-    var redo=document.createElement('button');redo.style.cssText='border-radius:20px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;border:1.5px solid '+color+'55;color:'+color+';margin-left:5px;font-family:DM Sans,sans-serif';
+    var redo=document.createElement('button');redo.style.cssText='border-radius:20px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;border:1.5px solid '+color+'55;color:'+color+';margin-left:5px;font-family:DM Sans,sans-serif';
     redo.textContent='↺ Redo';redo.onclick=function(){startVoice(tid,who,color);};ct.appendChild(redo);
     var del=document.createElement('button');del.style.cssText='background:transparent;border:1.5px solid #DDD;color:#BBB;border-radius:20px;padding:6px 9px;font-size:11px;cursor:pointer;margin-left:5px';
     del.textContent='✕';del.onclick=function(){deleteVoice(tid,who,color);};ct.appendChild(del);
@@ -771,6 +789,13 @@ function buildPersonBox(id, who, emoji, label, color, bg, avBg){
   fin.id = 'fup-' + id + '-' + who;
   fin.onchange = function(e){ handleImgUpload(e, id, who); };
   box.appendChild(fin);
+
+  // Highlight if this is the logged-in user
+  if(activeUser===who){
+    box.style.boxShadow = who==='me'
+      ? '0 0 0 2.5px #E91E8C, 0 4px 16px rgba(233,30,140,.2)'
+      : '0 0 0 2.5px #F06292, 0 4px 16px rgba(240,98,146,.2)';
+  }
 
   // Note textarea
   var ta = document.createElement('textarea');
@@ -948,7 +973,7 @@ function buildHistSection(tid){
   var wrap=document.createElement('div');
   wrap.className='hist-wrap'; wrap.id='hist-sec-'+tid;
   var ttl=document.createElement('div'); ttl.className='hist-title';
-  ttl.innerHTML='&#x1F4DC; Task History'+(h.length>0?' <span style="background:#E91E8C;color:#fff;border-radius:20px;padding:1px 8px;font-size:10px;margin-left:6px">'+h.length+'</span>':'');
+  ttl.innerHTML='&#x1F4DC; Task History'+(h.length>0?' <span style="background:#E91E8C;color:#fff;border-radius:20px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px">'+h.length+'</span>':'');
   wrap.appendChild(ttl);
   if(h.length===0){
     var emp=document.createElement('div'); emp.className='hist-empty';
@@ -1036,6 +1061,7 @@ function buildChatPost(tid){
   var sel=document.createElement('select'); sel.className='chat-who-sel';
   var o1=document.createElement('option'); o1.value='me'; o1.textContent='🧑 '+ML; sel.appendChild(o1);
   var o2=document.createElement('option'); o2.value='wife'; o2.textContent='👩 '+WL; sel.appendChild(o2);
+  if(activeUser) sel.value=activeUser;
   row.appendChild(sel);
   var postBtn=document.createElement('button'); postBtn.className='chat-post-btn'; postBtn.textContent='Post →';
   postBtn.onclick=function(){
@@ -1119,12 +1145,13 @@ document.addEventListener('click',function(e){
   if(e.target===popup)closeClrPopup();
 });
 
-var PASSCODE='1742', lockEntry='';
+var PASSCODE_ME='1980', PASSCODE_WIFE='1981', lockEntry='', activeUser=null;
 function lockKey(n){
   if(lockEntry.length>=4)return;
   lockEntry+=n; updateDots();
   if(lockEntry.length===4){
-    if(lockEntry===PASSCODE){
+    if(lockEntry===PASSCODE_ME||lockEntry===PASSCODE_WIFE){
+      activeUser = lockEntry===PASSCODE_ME ? 'me' : 'wife';
       var ls=document.getElementById('lock-screen');
       ls.classList.add('unlock-anim');
       setTimeout(function(){ls.style.display='none';renderList();},480);
