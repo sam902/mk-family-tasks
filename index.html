@@ -1170,12 +1170,7 @@ function updateDots(){
     if(i<lockEntry.length){d.classList.add('filled');}else{d.classList.remove('filled');}
   }
 }
-document.addEventListener('click',function(e){
-  var btn=e.target.closest?e.target.closest('[data-key]'):null;
-  if(!btn)return;
-  var k=btn.getAttribute('data-key');
-  if(k==='del'){lockDel();}else{lockKey(k);}
-});
+// lock buttons use direct onclick handlers
 document.addEventListener('keydown',function(e){
   var ls=document.getElementById('lock-screen');
   if(ls&&ls.style.display==='none')return;
