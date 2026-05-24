@@ -232,6 +232,17 @@
   .person-box.active-user{box-shadow:0 0 0 2.5px #E91E8C, 0 4px 16px rgba(233,30,140,.2)}
   .person-box.active-wife{box-shadow:0 0 0 2.5px #F06292, 0 4px 16px rgba(240,98,146,.2)}
   .active-badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#E91E8C,#F472B6);color:#fff;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:6px}
+
+  .overdue .ctitle{color:#F43F5E}
+  .overdue-badge{display:inline-flex;align-items:center;gap:4px;background:#FEF2F2;
+    color:#F43F5E;border:1.5px solid #FECDD3;border-radius:20px;padding:2px 8px;
+    font-size:11px;font-weight:700;animation:overdueFlash 1.2s ease-in-out infinite}
+  @keyframes overdueFlash{0%,100%{opacity:1;background:#FEF2F2}50%{opacity:.6;background:#FFE4E6}}
+  .date-range{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#4A1530;margin-bottom:2px;flex-wrap:wrap}
+  .date-range .sep{color:#C48FAA;font-size:11px}
+  .date-start{color:#6D1B4A}
+  .date-due{color:#6D1B4A}
+  .date-due.overdue{color:#F43F5E;font-weight:700}
 </style>
 </head>
 <body>
@@ -304,7 +315,8 @@
     <div class="sh-head"><div class="sh-title">New Task</div><button class="sh-close" onclick="closeOverlay('add-ov')">×</button></div>
     <div class="ferr" id="add-err"></div>
     <label class="flabel">Task Title *</label><input class="finput" id="add-title" placeholder="What needs to get done?"/>
-    <label class="flabel">Date</label><input class="finput" id="add-date" type="date"/>
+    <label class="flabel">Start Date</label><input class="finput" id="add-date" type="date"/>
+    <label class="flabel">Due Date</label><input class="finput" id="add-due" type="date"/>
     <label class="flabel">Details</label><textarea class="ftextarea" id="add-detail" placeholder="Add notes or context…"></textarea>
     <label class="flabel">Starting Progress &nbsp;<span id="add-pct-lbl" style="color:var(--me);font-weight:800">0%</span></label>
     <input class="frange" id="add-prog" type="range" min="0" max="100" step="5" value="0" oninput="document.getElementById('add-pct-lbl').textContent=this.value+'%'"/>
@@ -349,6 +361,19 @@
       <input class="finput" id="s-wife-phone" placeholder="e.g. 60129876543" type="tel" style="margin-bottom:10px"/>
       <label class="flabel">Darling Ji's CallMeBot API Key</label><input class="finput" id="s-wife-key" placeholder="e.g. 7654321"/>
     </div>
+    <div class="settings-group">
+      <div class="settings-group-title">&#x2601;&#xFE0F; Shared Tasks (JSONBin)</div>
+      <div class="settings-note" style="margin-bottom:10px;font-size:11px">
+        Free cloud sync so both phones share the same tasks.<br>
+        1. Go to <strong>jsonbin.io</strong> &#x2192; Sign up free<br>
+        2. Click <strong>API Keys</strong> &#x2192; copy your Master Key<br>
+        3. Paste it below &#x2192; Save &#x2192; a Bin is created automatically
+      </div>
+      <label class="flabel">JSONBin Master Key</label>
+      <input class="finput" id="s-jb-key" placeholder="$2b$10$..."/>
+      <label class="flabel">Bin ID <small style="font-weight:400;color:var(--muted)">(auto-filled after first save)</small></label>
+      <input class="finput" id="s-jb-bin" placeholder="auto"/>
+    </div>
     <button class="btn-main" onclick="saveSettings()">&#x1F4BE; Save Settings</button>
   </div></div>
 </div>
@@ -368,7 +393,7 @@ var safeStorage = {
 
 var TASKS_KEY='mk-tasks-v5', SETTINGS_KEY='mk-settings-v1';
 function loadTasks(){try{return JSON.parse(safeStorage.getItem(TASKS_KEY))||[];}catch(e){return [];}}
-function saveTasks(t){safeStorage.setItem(TASKS_KEY,JSON.stringify(t));}
+function saveTasks(t){safeStorage.setItem(TASKS_KEY,JSON.stringify(t));saveTasksCloud();}
 function loadSettings(){try{return JSON.parse(safeStorage.getItem(SETTINGS_KEY))||{};}catch(e){return {};}}
 function saveSettingsData(s){safeStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}
 function loadAudio(k){return safeStorage.getItem('aud-'+k);}
@@ -418,6 +443,14 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function fmtDate(d){return new Date(d+'T00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
 function fmtSec(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 function isToday(d){return d===new Date().toISOString().split('T')[0];}
+function isOverdue(task){
+  if(!task.dueDate||task.progress>=100)return false;
+  return task.dueDate < new Date().toISOString().split('T')[0];
+}
+function fmtDateShort(d){
+  if(!d)return '';
+  return new Date(d+'T00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+}
 function pColor(p){return p<34?'#F43F5E':p<67?'#F59E0B':'#10B981';}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toast(msg,dur){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},dur||2800);}
@@ -430,12 +463,75 @@ function openSettings(){
   document.getElementById('s-wife-name').value=s.wifeName||'';
   document.getElementById('s-wife-phone').value=s.wifePhone||'';
   document.getElementById('s-wife-key').value=s.wifeKey||'';
+  document.getElementById('s-jb-key').value=s.jbKey||'';
+  document.getElementById('s-jb-bin').value=s.jbBin||'';
   openOverlay('set-ov');
 }
 function saveSettings(){
-  saveSettingsData({myName:document.getElementById('s-my-name').value.trim(),myPhone:document.getElementById('s-my-phone').value.trim(),myKey:document.getElementById('s-my-key').value.trim(),wifeName:document.getElementById('s-wife-name').value.trim(),wifePhone:document.getElementById('s-wife-phone').value.trim(),wifeKey:document.getElementById('s-wife-key').value.trim()});
+  saveSettingsData({myName:document.getElementById('s-my-name').value.trim(),myPhone:document.getElementById('s-my-phone').value.trim(),myKey:document.getElementById('s-my-key').value.trim(),wifeName:document.getElementById('s-wife-name').value.trim(),wifePhone:document.getElementById('s-wife-phone').value.trim(),wifeKey:document.getElementById('s-wife-key').value.trim(),jbKey:document.getElementById('s-jb-key').value.trim(),jbBin:document.getElementById('s-jb-bin').value.trim()});
+  if(document.getElementById('s-jb-key').value.trim() && !document.getElementById('s-jb-bin').value.trim()) createJBBin();
   closeOverlay('set-ov'); toast('\u2705 Settings saved');
 }
+
+
+// ── JSONBin Cloud Sync ──
+var JB_BASE = 'https://api.jsonbin.io/v3/b';
+function jbHeaders(key){
+  return {'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':'false'};
+}
+function createJBBin(){
+  var s=loadSettings(); if(!s.jbKey)return;
+  fetch(JB_BASE,{
+    method:'POST',
+    headers:jbHeaders(s.jbKey),
+    body:JSON.stringify({tasks:[],version:1})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data.metadata&&data.metadata.id){
+      var ns=loadSettings(); ns.jbBin=data.metadata.id; saveSettingsData(ns);
+      var el=document.getElementById('s-jb-bin'); if(el) el.value=data.metadata.id;
+      toast('☁️ Cloud bin created! Share your settings with your wife.');
+    }
+  }).catch(function(){toast('⚠️ Could not create cloud bin - check API key');});
+}
+var _jbSaveTimer=null;
+function saveTasksCloud(){
+  var s=loadSettings(); if(!s.jbKey||!s.jbBin)return;
+  clearTimeout(_jbSaveTimer);
+  _jbSaveTimer=setTimeout(function(){
+    fetch(JB_BASE+'/'+s.jbBin,{
+      method:'PUT',
+      headers:jbHeaders(s.jbKey),
+      body:JSON.stringify({tasks:tasks,version:1})
+    }).catch(function(){});
+  },1500);
+}
+function loadTasksCloud(cb){
+  var s=loadSettings(); if(!s.jbKey||!s.jbBin){cb(false);return;}
+  fetch(JB_BASE+'/'+s.jbBin+'/latest',{
+    method:'GET',
+    headers:{'X-Master-Key':s.jbKey}
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data.record&&data.record.tasks){
+      tasks=data.record.tasks;
+      safeStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
+      cb(true);
+    } else {cb(false);}
+  }).catch(function(){cb(false);});
+}
+
+function syncNow(){
+  var btn=document.getElementById('sync-btn');
+  if(btn) btn.textContent='⏳';
+  loadTasksCloud(function(ok){
+    if(btn) btn.textContent='☁';
+    if(ok){toast('☁️ Synced!');renderList();}
+    else{toast('⚠️ No cloud set up - check Settings');}
+  });
+}
+// Auto-sync when tab becomes visible
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible') loadTasksCloud(function(ok){if(ok)renderList();});
+});
 
 function renderList(){
   var list=document.getElementById('list'), empty=document.getElementById('empty');
@@ -458,7 +554,7 @@ function renderList(){
     var mePics=loadImgList(task.id,'me').length, wifePics=loadImgList(task.id,'wife').length;
     var meAud=!!loadAudio(task.id+'-me')||!!(safeStorage.getItem('note-'+task.id+'-me')||'').trim(), wifeAud=!!loadAudio(task.id+'-wife')||!!(safeStorage.getItem('note-'+task.id+'-wife')||'').trim();
     var unseenCount=getUnseenCount(task.id);
-    var div=document.createElement('div'); div.className='task-card'; div.style.animationDelay=(i*.06)+'s';
+    var div=document.createElement('div'); div.className='task-card'+(isOverdue(task)?' overdue':''); div.style.animationDelay=(i*.06)+'s';
     div.onclick=function(){openDetail(task.id);};
     var badges='';
     if(meAud||wifeAud||mePics||wifePics||unseenCount>0){
@@ -473,7 +569,15 @@ function renderList(){
     div.innerHTML='<div class="ctop"><div class="cleft">'
       +(isToday(task.date)?'<div class="ctag">TODAY</div>':'')
       +'<div class="ctitle">'+esc(task.title)+'</div>'
-      +'<div class="cdate">\ud83d\udcc5 '+fmtDate(task.date)+'</div></div>'
+      +(function(){
+        var over=isOverdue(task);
+        var dr='<div class="date-range">'
+          +(task.date?'<span class="date-start">\ud83d\ude80 '+fmtDateShort(task.date)+'</span>':'')
+          +(task.dueDate?'<span class="sep">&#x2192;</span><span class="date-due'+(over?' overdue':'')+'">\ud83c\udfc1 '+fmtDateShort(task.dueDate)+'</span>':'')
+          +(over?'<span class="overdue-badge">&#x26A0; Overdue</span>':'')
+          +'</div>';
+        return dr;
+      })()+'</div>'
       +'<div class="cpct" style="background:'+c+'12;border-color:'+c+'30"><span style="color:'+c+'">'+p+'%</span></div></div>'
       +'<div class="cbar-bg"><div class="cbar-fill" style="width:'+p+'%;background:linear-gradient(90deg,'+c+'BB,'+c+')"></div></div>'
       +(task.detail?'<div class="cdetail">'+esc(task.detail)+'</div>':'')
@@ -485,6 +589,7 @@ function renderList(){
 function openAdd(){
   document.getElementById('add-title').value='';
   document.getElementById('add-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('add-due').value='';
   document.getElementById('add-detail').value='';
   document.getElementById('add-prog').value=0;
   document.getElementById('add-pct-lbl').textContent='0%';
@@ -495,7 +600,7 @@ function submitAdd(){
   var title=document.getElementById('add-title').value.trim(), errEl=document.getElementById('add-err');
   if(!title){errEl.textContent='Please enter a task title.';errEl.style.display='block';return;}
   errEl.style.display='none';
-  tasks.unshift({id:uid(),title:title,date:document.getElementById('add-date').value,detail:document.getElementById('add-detail').value.trim(),progress:Number(document.getElementById('add-prog').value),createdAt:new Date().toISOString()});
+  tasks.unshift({id:uid(),title:title,date:document.getElementById('add-date').value,dueDate:document.getElementById('add-due').value,detail:document.getElementById('add-detail').value.trim(),progress:Number(document.getElementById('add-prog').value),createdAt:new Date().toISOString()});
   saveTasks(tasks); closeOverlay('add-ov'); renderList();
 }
 
@@ -513,7 +618,15 @@ function buildDetail(id){
   document.getElementById('det-body').innerHTML=
     '<div class="sh-head"><div style="flex:1;margin-right:11px">'
     +'<div class="sh-title">'+esc(task.title)+'</div>'
-    +'<div class="det-date">\ud83d\udcc5 '+fmtDate(task.date)+'</div></div>'
+    +(function(){
+    var over=isOverdue(task);
+    var s='<div class="date-range" style="margin-bottom:8px">'
+      +(task.date?'<span class="date-start">\ud83d\ude80 Start: '+fmtDateShort(task.date)+'</span>':'')
+      +(task.dueDate?'<span class="sep">&#x2192;</span><span class="date-due'+(over?' overdue':'')+'">\ud83c\udfc1 Due: '+fmtDateShort(task.dueDate)+'</span>':'')
+      +(over?'<span class="overdue-badge">&#x26A0; Overdue</span>':'')
+      +'</div>';
+    return s;
+  })()+'</div>'
     +'<button class="sh-close" onclick="closeOverlay(\'det-ov\')">\u00d7</button></div>'
     +(task.detail?'<div class="det-info">'+esc(task.detail)+'</div>':'')
     +'<div class="sec-wrap"><div class="prog-head"><span class="sec-title">\ud83d\udcca Progress</span>'
@@ -919,24 +1032,17 @@ function openNotif(taskId){
 function openWaMe(phone,title){window.open('https://wa.me/'+phone+'?text='+encodeURIComponent('\ud83d\udccb Check MK Family Tasks: '+title),'_blank');}
 function sendInstant(taskId){
   var task=tasks.find(function(t){return t.id===taskId;}); if(!task)return;
-  var s=loadSettings();
   var _desc=task.detail?' — '+task.detail:'';
   var fullMsg='📋 Check MK Family Tasks: '+task.title+_desc;
   var msg=encodeURIComponent(fullMsg);
-  var ts=aestTime();
-  var sent=0;
-  function _send(phone,key,who,name){
-    if(!phone||!key)return;
-    new Image().src='https://api.callmebot.com/whatsapp.php?phone='+phone+'&text='+msg+'&apikey='+key;
-    addHist(taskId,{by:who,byName:name,type:'wa',msg:fullMsg,ts:ts});
-    sent++;
-  }
-  _send(s.myPhone,s.myKey,'me',s.myName||'Pandit Ji');
-  _send(s.wifePhone,s.wifeKey,'wife',s.wifeName||'Darling Ji');
-  if(sent>0){toast('📲 WhatsApp sent to '+sent+' person'+(sent>1?'s':'')+'!');setTimeout(function(){buildHistSection(taskId);renderList();},200);}
-  else{toast('⚠️ Set up phone numbers in Settings first');openSettings();}
+  window.open('https://wa.me/?text='+msg,'_blank');
+  var s=loadSettings();
+  var who=activeUser||'me';
+  var name=who==='me'?(s.myName||'Pandit Ji'):(s.wifeName||'Darling Ji');
+  addHist(taskId,{by:who,byName:name,type:'wa',msg:fullMsg,ts:aestTime()});
+  setTimeout(function(){buildHistSection(taskId);renderList();},200);
+  toast('📲 Opening WhatsApp...');
 }
-
 function sendNotifications(taskId){
   var task=tasks.find(function(t){return t.id===taskId;}); if(!task)return;
   var s=loadSettings();
@@ -1154,7 +1260,13 @@ function lockKey(n){
       activeUser = lockEntry===PASSCODE_ME ? 'me' : 'wife';
       var ls=document.getElementById('lock-screen');
       ls.classList.add('unlock-anim');
-      setTimeout(function(){ls.style.display='none';renderList();},480);
+      setTimeout(function(){
+        ls.style.display='none';
+        loadTasksCloud(function(synced){
+          if(synced) toast('☁️ Tasks synced from cloud');
+          renderList();
+        });
+      },480);
     } else {
       var wrap=document.getElementById('dots-wrap');
       document.getElementById('lock-err').textContent='Incorrect passcode';
