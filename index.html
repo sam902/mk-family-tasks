@@ -243,6 +243,25 @@
   .date-start{color:#6D1B4A}
   .date-due{color:#6D1B4A}
   .date-due.overdue{color:#F43F5E;font-weight:700}
+
+  .edit-field{background:#fff;border:1.5px solid #F8D7E3;border-radius:12px;
+    padding:8px 12px;font-size:15px;font-weight:700;color:#3D0A22;width:100%;
+    font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px;box-sizing:border-box}
+  .edit-field:focus{border-color:#E91E8C;box-shadow:0 0 0 3px rgba(233,30,140,.1)}
+  .edit-date-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .edit-date-row label{font-size:11px;font-weight:700;color:#C48FAA;white-space:nowrap}
+  .edit-date{background:#fff;border:1.5px solid #F8D7E3;border-radius:10px;
+    padding:7px 10px;font-size:13px;color:#3D0A22;outline:none;flex:1;
+    font-family:'DM Sans',sans-serif}
+  .edit-date:focus{border-color:#E91E8C}
+  .edit-desc{width:100%;background:#fff;border:1.5px solid #F8D7E3;border-radius:12px;
+    padding:9px 12px;font-size:14px;color:#3D0A22;outline:none;resize:vertical;
+    min-height:60px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:8px}
+  .edit-desc:focus{border-color:#E91E8C}
+  .edit-save-btn{background:linear-gradient(135deg,#E91E8C,#F472B6);color:#fff;
+    border:none;border-radius:20px;padding:7px 18px;font-size:13px;font-weight:700;
+    cursor:pointer;margin-top:2px}
+  .edit-hint{font-size:11px;color:#C48FAA;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -615,20 +634,21 @@ function buildDetail(id){
     var st=p===v?' style="background:'+pColor(v)+';color:#fff;font-weight:700"':'';
     return '<button class="pchip '+(p===v?'on':'')+'" '+st+' onclick="setProgress(\''+id+'\','+v+')">'+v+'%</button>';
   }).join('');
-  document.getElementById('det-body').innerHTML=
+  var _detBody = document.getElementById('det-body');
+  _detBody.innerHTML=
     '<div class="sh-head"><div style="flex:1;margin-right:11px">'
-    +'<div class="sh-title">'+esc(task.title)+'</div>'
-    +(function(){
-    var over=isOverdue(task);
-    var s='<div class="date-range" style="margin-bottom:8px">'
-      +(task.date?'<span class="date-start">\ud83d\ude80 Start: '+fmtDateShort(task.date)+'</span>':'')
-      +(task.dueDate?'<span class="sep">&#x2192;</span><span class="date-due'+(over?' overdue':'')+'">\ud83c\udfc1 Due: '+fmtDateShort(task.dueDate)+'</span>':'')
-      +(over?'<span class="overdue-badge">&#x26A0; Overdue</span>':'')
-      +'</div>';
-    return s;
-  })()+'</div>'
+    +'<div class="edit-hint">&#x1F4DD; Tap to edit title or dates</div>'
+    +'<input class="edit-field" id="det-title-'+id+'" value="'+esc(task.title)+'"/>'
+    +'<div class="edit-date-row">'
+    +'<label>&#x1F680;</label><input class="edit-date" type="date" id="det-start-'+id+'" value="'+(task.date||'')+'" />'
+    +'<span style="color:#C48FAA">&#x2192;</span>'
+    +'<label>&#x1F3C1;</label><input class="edit-date" type="date" id="det-due-'+id+'" value="'+(task.dueDate||'')+'" />'
+    +'</div>'
+    +'<textarea class="edit-desc" id="det-desc-'+id+'" placeholder="Add description...">'+esc(task.detail||'')+'</textarea>'
+    +'<button class="edit-save-btn" onclick="saveTaskEdits(\''+id+'\')">'+'&#x2705; Save</button>'
+    +(isOverdue(task)?'<div style="margin-top:6px"><span class="overdue-badge">&#x26A0; Overdue</span></div>':'')
+    +'</div>'
     +'<button class="sh-close" onclick="closeOverlay(\'det-ov\')">\u00d7</button></div>'
-    +(task.detail?'<div class="det-info">'+esc(task.detail)+'</div>':'')
     +'<div class="sec-wrap"><div class="prog-head"><span class="sec-title">\ud83d\udcca Progress</span>'
     +'<span class="prog-val" id="pv-'+id+'" style="color:'+c+'">'+p+'%</span></div>'
     +'<div class="prog-bar" onclick="barClick(event,\''+id+'\')">'
@@ -648,6 +668,22 @@ function buildDetail(id){
     if(!activeUser||activeUser==='wife') initVoice(id,'wife');
     buildHistSection(id); buildChatPost(id);
   },50);
+}
+
+
+function saveTaskEdits(id){
+  var task=tasks.find(function(t){return t.id===id;}); if(!task)return;
+  var titleEl=document.getElementById('det-title-'+id);
+  var startEl=document.getElementById('det-start-'+id);
+  var dueEl  =document.getElementById('det-due-'+id);
+  var descEl =document.getElementById('det-desc-'+id);
+  if(titleEl&&titleEl.value.trim()) task.title=titleEl.value.trim();
+  if(startEl) task.date=startEl.value;
+  if(dueEl)   task.dueDate=dueEl.value;
+  if(descEl)  task.detail=descEl.value.trim();
+  saveTasks(tasks);
+  renderList();
+  toast('✅ Saved!');
 }
 
 function setProgress(id,val){
@@ -998,37 +1034,8 @@ function openLightbox(tid,who,vid){var data=loadImgData(tid,who,vid);if(!data)re
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open');document.getElementById('lb-img').src='';}
 
 // NOTIFICATIONS
-function openNotif(taskId){
-  var task=tasks.find(function(t){return t.id===taskId;}); if(!task)return;
-  var s=loadSettings(), hasMe=s.myPhone&&s.myKey, hasWife=s.wifePhone&&s.wifeKey;
-  var ML=s.myName||'Pandit Ji', WL=s.wifeName||'Darling Ji';
-  var html='<div class="sh-head"><div class="sh-title">\ud83d\udcac Post Notification</div>'
-    +'<button class="sh-close" onclick="closeOverlay(\'notif-ov\')">\u00d7</button></div>'
-    +'<div class="notif-info">Sends WhatsApp message:<br><em>"\ud83d\udccb Check MK Family Tasks: <strong>'+esc(task.title)+'</strong>"</em></div>';
-  if(!hasMe&&!hasWife){
-    html+='<div style="text-align:center;padding:20px 10px"><div style="font-size:40px;margin-bottom:12px">\u2699\ufe0f</div>'
-      +'<div style="font-size:14px;color:var(--navy);font-weight:600;margin-bottom:8px">WhatsApp not set up yet</div>'
-      +'<div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Open Settings to add phone numbers<br>and CallMeBot API keys.</div>'
-      +'<button class="btn-main" onclick="closeOverlay(\'notif-ov\');openSettings()" style="width:auto;padding:12px 28px">Open Settings</button></div>';
-  } else {
-    html+='<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px">Select who to notify:</div>';
-    if(hasMe) html+='<label class="notif-check-row"><input type="checkbox" id="nchk-me" checked/>'
-      +'<div class="notif-person-av" style="background:rgba(233,30,140,.15)">\ud83e\uddd1</div>'
-      +'<div><div class="notif-person-name">'+esc(ML)+'</div><div class="notif-person-phone">+'+esc(s.myPhone)+'</div></div></label>';
-    if(hasWife) html+='<label class="notif-check-row"><input type="checkbox" id="nchk-wife" checked/>'
-      +'<div class="notif-person-av" style="background:rgba(240,98,146,.15)">\ud83d\udc69</div>'
-      +'<div><div class="notif-person-name">'+esc(WL)+'</div><div class="notif-person-phone">+'+esc(s.wifePhone)+'</div></div></label>';
-    html+='<button class="notif-send-btn" onclick="sendNotifications(\''+taskId+'\')">'
-      +'<span style="font-size:18px">\ud83d\udcf2</span> Send WhatsApp Message</button>'
-      +'<div class="notif-fallback">No API key yet? '
-      +(hasMe?'<a href="#" onclick="openWaMe(\''+s.myPhone+'\',\''+esc(task.title)+'\');return false">Open for '+esc(ML)+'</a>':'')
-      +(hasMe&&hasWife?' \u00b7 ':'')
-      +(hasWife?'<a href="#" onclick="openWaMe(\''+s.wifePhone+'\',\''+esc(task.title)+'\');return false">Open for '+esc(WL)+'</a>':'')
-      +'<br>(Opens WhatsApp pre-typed \u2014 just tap Send)</div>';
-  }
-  document.getElementById('notif-body').innerHTML=html;
-  openOverlay('notif-ov');
-}
+function openNotif(taskId){ sendInstant(taskId); }
+
 function openWaMe(phone,title){window.open('https://wa.me/'+phone+'?text='+encodeURIComponent('\ud83d\udccb Check MK Family Tasks: '+title),'_blank');}
 function sendInstant(taskId){
   var task=tasks.find(function(t){return t.id===taskId;}); if(!task)return;
@@ -1042,25 +1049,6 @@ function sendInstant(taskId){
   addHist(taskId,{by:who,byName:name,type:'wa',msg:fullMsg,ts:aestTime()});
   setTimeout(function(){buildHistSection(taskId);renderList();},200);
   toast('📲 Opening WhatsApp...');
-}
-function sendNotifications(taskId){
-  var task=tasks.find(function(t){return t.id===taskId;}); if(!task)return;
-  var s=loadSettings();
-  var _desc=task.detail?' — '+task.detail:'';
-  var fullMsg='\ud83d\udccb Check MK Family Tasks: '+task.title+_desc;
-  var msg=encodeURIComponent(fullMsg);
-  var meChk=document.getElementById('nchk-me'), wifeChk=document.getElementById('nchk-wife');
-  var sent=0;
-  var _ts=aestTime();
-  function send(phone,key,who,name){
-    new Image().src='https://api.callmebot.com/whatsapp.php?phone='+phone+'&text='+msg+'&apikey='+key;
-    addHist(taskId,{by:who,byName:name,type:'wa',msg:fullMsg,ts:_ts});
-    sent++;
-  }
-  if(meChk&&meChk.checked&&s.myPhone&&s.myKey) send(s.myPhone,s.myKey,'me',s.myName||'Pandit Ji');
-  if(wifeChk&&wifeChk.checked&&s.wifePhone&&s.wifeKey) send(s.wifePhone,s.wifeKey,'wife',s.wifeName||'Darling Ji');
-  closeOverlay('notif-ov');
-  if(sent>0){toast('\ud83d\udcf2 Notification sent to '+sent+' person'+(sent>1?'s':'')+'!');setTimeout(function(){buildHistSection(taskId);renderList();},200);}else{toast('\u26a0\ufe0f Select at least one person');}
 }
 
 function openOverlay(id){var el=document.getElementById(id);el.style.display='flex';requestAnimationFrame(function(){el.classList.add('open');});}
